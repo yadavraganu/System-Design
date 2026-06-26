@@ -9,6 +9,7 @@
 ### Source Data
 - What are source system
 - Is this going to be pull or push based approach to get data from source
+- Data format 
 - Data Refresh schedule at source end
 - Incremental/Full Refresh each day
 - If Incremental is there way to identify like a column from source or we need to do cdc at our end.
