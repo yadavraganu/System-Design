@@ -45,9 +45,43 @@ Iceberg applies sequence numbers across commits to maintain a perfect chronologi
 * **Correctness**: Guarantees absolute transactional consistency for streaming upserts and rapid write cycles.
 * **Zero Rewrites**: Eliminates the need to modify or rewrite existing delete files when new data arrives.
 * **Deterministic Reads**: Allows multiple engines to independently construct the exact logical state of a table at any snapshot.
-
+<br></br>
 ## 2. Metadata Layer
 The Iceberg metadata layer is a colocated tree structure stored alongside your physical data files. It functions as the management system of the table by tracking all data files, file-level statistics, and the historical operations that created them. Composed of three distinct file types **manifest files**, **manifest lists**, and **metadata files** this layer is the engine that enables Iceberg's core features, including time travel, schema evolution, and efficient large-scale query planning.
 ### 2.1 Manifest Files
+A manifest file is an immutable, Avro-formatted metadata file that acts as the leaf-level index of an Iceberg table. Its primary purpose is to track table data at the individual file level (rather than the folder or partition level), which solves the core scaling limitations of the traditional Hive table format.  
+Manifest files sit at the lowest layer of the Iceberg metadata tree, directly above the physical data layer.  
+
+**Strict Separation of Concerns**  
+
+While data files and delete files utilize the exact same structural schema, they are kept entirely separate:
+
+* **Data Manifests:** Track only data files (e.g., Parquet, ORC).
+* **Delete Manifests:** Track only positional or equality delete files.
+* Note: A single manifest file will never mix both file types.
+
+**Embedded Metadata & Statistics**  
+
+Instead of tracking entire folders, each row in a manifest file represents a specific physical file and stores:
+
+* **Physical Details:** Absolute URI file path, file format, and file size in bytes.
+* **Partition Membership:** The exact partition values to which that file belongs.
+* **Row Counts:** The total number of records contained within that specific file.
+* **Column-Level Statistics:**
+* **Lower and Upper Bounds** (Minimum and maximum values for every column).
+   * Null and NaN Counts (The total number of null or floating-point missing values).
+
+| Feature | Old Hive Table Format | Apache Iceberg Manifests |
+|---|---|---|
+| Tracking Level | Directory/Folder Level | File Level |
+| Stats Collection | Expensive, post-processed read jobs over entire partitions. | Lightweight, inline writes bundled by the engine during ingestion. |
+| Metadata Freshness | Stale or missing (because jobs are too costly to re-run). | Always accurate and up-to-date with every data commit. |
+| File Checking | Engines must open the footers of hundreds of files. | Engines read one manifest to check stats for multiple data files. |
+
+**Key Performance Benefits**
+
+* **Eliminates Storage Overhead:** Query engines skip the slow, expensive process of opening physical data file footers just to check if they contain relevant data.
+* **O(1) Data Pruning:** By instantly checking the pre-computed upper and lower column bounds inside the manifest, query engines skip irrelevant data files entirely without touching cloud object storage.
+* **Hidden Partitioning:** Because partition data is stored textually inside the manifest rather than dictated by a physical folder path (like /year=2026/), you can alter your partitioning strategy layout over time without rebuilding historical data.
 ### 2.2 Manifest List
 ### 2.3 Metadata Files
