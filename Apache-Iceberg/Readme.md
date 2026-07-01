@@ -100,8 +100,41 @@ Structurally, a manifest list consists of an array of structs. Each individual s
 * **Top-Level Partition Pruning**: Query engines evaluate the upper and lower partition bounds stored inside this array of structs first. This allows the engine to instantly skip entire manifest files without ever opening them, drastically speeding up query planning.
 * **Instant Time Travel**: Because every snapshot of an Iceberg table points to its own dedicated manifest list, query engines can instantly isolate and reconstruct what the table looked like at any historical point in time.
 * **O(1) Planning Scalability**: By consolidating multiple manifest file summaries into a single list, Iceberg replaces expensive cloud storage file listings with fast, lightweight metadata reads.
-
+<br></br>
 ### 2.3 Metadata Files
+A metadata file (typically stored as a .metadata.json file) is the root configuration file that defines the complete state of an Iceberg table at any given point in time. It sits at the absolute top of the Iceberg metadata hierarchy, acting as the starting point for every single read and write operation.
+
+**What is Inside a Metadata File?**  
+
+Every metadata file maintains a central registry of the table's structural and operational layout, including:
+
+* Current Schema: The definition of all columns, names, field IDs, and data types.
+* Partition Specifications: The rules defining how data is partitioned (including hidden partitioning configurations).
+* Snapshot Log: A chronological history of all table versions (snapshots) generated over time.
+* Current Snapshot Pointer: An explicit flag indicating exactly which snapshot represents the current, live version of the table.
+* Advanced Statistics (Optional): Direct references to auxiliary files, like Puffin files, which house column-level sketches and Bloom filters.
+
+**How Metadata Files Handle Transactions & Concurrency**  
+
+The metadata file plays a vital role in ensuring ACID transactions and enabling concurrent writes through an immutable design.  
+
+**The Atomic Commit Model**  
+
+Metadata files are strictly immutable. Every time an engine modifies a table (such as executing an INSERT, UPDATE, or ALTER TABLE command), it never updates the existing metadata file. Instead, the engine creates a completely new metadata file representing the new state.  
+
+**Linear Commit History**  
+ 
+Once the new metadata file is created, it is registered atomically via the central Iceberg Catalog. This atomic handoff creates a strict, unbroken, linear history of table versions, ensuring that readers always see a consistent snapshot of the data.  
+
+**Resolving Concurrent Writes**  
+
+If multiple compute engines try to write to the exact same table simultaneously, the metadata file architecture prevents conflicts:
+
+   1. Both engines build their own new .metadata.json files based on the current state.
+   2. The central catalog accepts the first engine's commit, swapping the pointer to its new metadata file.
+   3. When the second engine tries to commit, the catalog rejects it because its baseline metadata file is now out of date.
+   4. The second engine automatically retries by merging its changes into the newly updated metadata file.
+<br></br>
 ### 2.4 Puffin Files
 A Puffin file is a specialized binary container file format that acts as an auxiliary "sidecar" file. It stores advanced data statistics, indexes, and sketches (such as Bloom filters and Apache DataSketches) that are too complex or bulky to fit inside standard manifest files.
 
