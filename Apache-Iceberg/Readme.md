@@ -84,4 +84,17 @@ Instead of tracking entire folders, each row in a manifest file represents a spe
 * **O(1) Data Pruning:** By instantly checking the pre-computed upper and lower column bounds inside the manifest, query engines skip irrelevant data files entirely without touching cloud object storage.
 * **Hidden Partitioning:** Because partition data is stored textually inside the manifest rather than dictated by a physical folder path (like /year=2026/), you can alter your partitioning strategy layout over time without rebuilding historical data.
 ### 2.2 Manifest List
+A manifest list is an Avro-formatted metadata file that represents a snapshot (a specific version) of an Iceberg table at a given point in time. It sits exactly one layer above individual manifest files in the Iceberg metadata hierarchy.  
+Structurally, a manifest list consists of an array of structs. Each individual struct is dedicated to tracking exactly one manifest file and contains high-level summary metadata:
+
+* File Location: The exact physical URI path to find that specific manifest file.
+* Partition Membership: The specific partitions to which the data belongs.
+* Partition Column Bounds: The precise upper and lower bounds (minimum and maximum values) of the partition columns for all the data files tracked inside that manifest.
+* File Counts: The number of data files added, deleted, or left unchanged.
+
+**Key Functions**
+
+* **Top-Level Partition Pruning**: Query engines evaluate the upper and lower partition bounds stored inside this array of structs first. This allows the engine to instantly skip entire manifest files without ever opening them, drastically speeding up query planning.
+* **Instant Time Travel**: Because every snapshot of an Iceberg table points to its own dedicated manifest list, query engines can instantly isolate and reconstruct what the table looked like at any historical point in time.
+* **O(1) Planning Scalability**: By consolidating multiple manifest file summaries into a single list, Iceberg replaces expensive cloud storage file listings with fast, lightweight metadata reads.
 ### 2.3 Metadata Files
