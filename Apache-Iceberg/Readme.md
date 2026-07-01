@@ -100,4 +100,25 @@ Structurally, a manifest list consists of an array of structs. Each individual s
 * **Top-Level Partition Pruning**: Query engines evaluate the upper and lower partition bounds stored inside this array of structs first. This allows the engine to instantly skip entire manifest files without ever opening them, drastically speeding up query planning.
 * **Instant Time Travel**: Because every snapshot of an Iceberg table points to its own dedicated manifest list, query engines can instantly isolate and reconstruct what the table looked like at any historical point in time.
 * **O(1) Planning Scalability**: By consolidating multiple manifest file summaries into a single list, Iceberg replaces expensive cloud storage file listings with fast, lightweight metadata reads.
+
 ### 2.3 Metadata Files
+### 2.4 Puffin Files
+A Puffin file is a specialized binary container file format that acts as an auxiliary "sidecar" file. It stores advanced data statistics, indexes, and sketches (such as Bloom filters and Apache DataSketches) that are too complex or bulky to fit inside standard manifest files.
+
+**Internal Structure**  
+A Puffin file consists of a highly flexible sequence of typed byte blocks known as "blobs", wrapped by a magic header/footer signature (PUFF).
+
+* The Blobs: Store opaque, pre-computed metrics like Number of Distinct Values (NDV), probabilistic tracking arrays, or Roaring-bitmap deletion vectors.
+* The Footer: Acts as an internal file map, indexing the precise size, type, and location offset of each blob so engines can read them without scanning the entire file.
+
+
+**Where It Fits in the Architecture**  
+
+Puffin files decouple heavy statistical data from the main metadata tree to prevent manifest bloat and speed up innovation. They sit in two key areas:
+
+   1. Physical Layer: They are stored alongside your physical data files inside the cloud storage bucket.
+   2. Logical Layer: They are managed at the absolute top of the table hierarchy. Instead of being linked to individual manifests, their file paths and metadata are registered directly inside the root Table Metadata JSON File (.metadata.json) under the statistics or partition-statistics arrays.
+
+**Why It Matters to Query Engines**  
+
+Because of where they sit, a query engine's Cost-Based Optimizer (CBO) can read a Puffin file's footer during the initial planning phase. This allows the engine to fetch accurate distinct value counts and evaluate Bloom filters before executing a query, letting it choose the most efficient join strategies without scanning actual table data.
