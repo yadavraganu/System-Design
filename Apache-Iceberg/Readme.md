@@ -2,8 +2,10 @@
 ## 1. Data Layer
 The Apache Iceberg data layer constitutes the physical foundation of a table, storing actual data in formats like Parquet, ORC, or Avro alongside delete files for row-level mutations. This layer relies on scalable infrastructure such as cloud object storage or HDFS
 ### 1.1 Data Files
-The physical data layer of an Apache Iceberg table relies on file-format agnosticism, natively supporting Parquet, ORC, and Avro. This neutrality accommodates legacy organizational data, fits varying workload demands (e.g., Avro for streaming vs. Parquet for OLAP), and future-proofs infrastructure against changing industry standards.
-#### Why Parquet Dominates the Data Layer
+The physical data layer of an Apache Iceberg table relies on file-format agnosticism, natively supporting Parquet, ORC, and Avro. This neutrality accommodates legacy organizational data, fits varying workload demands (e.g., Avro for streaming vs. Parquet for OLAP), and future-proofs infrastructure against changing industry standards.  
+
+**Why Parquet Dominates the Data Layer**  
+
 While Iceberg is flexible, Apache Parquet is the de facto industry standard for production data lakes due to its highly efficient columnar structure:
 * **High Parallelism**: A single Parquet file can be split multiple ways, allowing different compute threads to read sections of the file simultaneously.
 * **Vectorized Data Skipping**: It stores granular column-level statistics (min/max values, null counts) at multiple split points, letting engines skip irrelevant data entirely.
@@ -32,15 +34,16 @@ Equality delete files identify logically deleted rows by storing specific column
 
 To prevent an equality delete file from accidentally erasing future insertions with identical column values, Apache Iceberg uses monotonic sequence numbers. Every table modification (commit) receives a unique, incrementing sequence number. Query engines use these numbers to ensure a delete file is only applied to older data files, completely ignoring newly inserted rows that share the same identifier.
 
-#### How Sequence Numbers Work (The Ordering Lifecycle)
+**How Sequence Numbers Work (The Ordering Lifecycle)**  
+
 Iceberg applies sequence numbers across commits to maintain a perfect chronological ledger:
 
 * Initial State (Seq 1): Base data files are written and tagged with sequence number 1.
 * The Deletion (Seq 2): An equality delete file is committed with sequence number 2 to remove a specific ID.
 * The Re-Insertion (Seq 3): The same ID is re-inserted. The new data file is tagged with sequence number 3.
 * The Query Resolution: The reading engine applies the delete file (Seq 2) exclusively to data files with a sequence number less than 2. Because the new insertion is at sequence 3, it safely bypasses the delete filter and shows up correctly in your query results.
-
-#### Key Benefits
+  
+**Key Benefits**  
 
 * **Correctness**: Guarantees absolute transactional consistency for streaming upserts and rapid write cycles.
 * **Zero Rewrites**: Eliminates the need to modify or rewrite existing delete files when new data arrives.
