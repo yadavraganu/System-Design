@@ -45,3 +45,9 @@ Iceberg applies sequence numbers across commits to maintain a perfect chronologi
 * **Correctness**: Guarantees absolute transactional consistency for streaming upserts and rapid write cycles.
 * **Zero Rewrites**: Eliminates the need to modify or rewrite existing delete files when new data arrives.
 * **Deterministic Reads**: Allows multiple engines to independently construct the exact logical state of a table at any snapshot.
+
+## 2. Metadata Layer
+The Iceberg metadata layer is a colocated tree structure stored alongside your physical data files. It functions as the management system of the table by tracking all data files, file-level statistics, and the historical operations that created them. Composed of three distinct file types **manifest files**, **manifest lists**, and **metadata files** this layer is the engine that enables Iceberg's core features, including time travel, schema evolution, and efficient large-scale query planning.
+### 2.1 Manifest Files
+### 2.2 Manifest List
+### 2.3 Metadata Files
