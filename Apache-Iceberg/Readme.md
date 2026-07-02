@@ -155,3 +155,20 @@ Puffin files decouple heavy statistical data from the main metadata tree to prev
 **Why It Matters to Query Engines**  
 
 Because of where they sit, a query engine's Cost-Based Optimizer (CBO) can read a Puffin file's footer during the initial planning phase. This allows the engine to fetch accurate distinct value counts and evaluate Bloom filters before executing a query, letting it choose the most efficient join strategies without scanning actual table data.
+## 3. Catalog Layer
+The catalog layer is the highest level of the Apache Iceberg table architecture and serves as the authoritative entry point for any operation. Before any data can be read or written, the query engine must consult this central registry to map a table's logical name (e.g., db.orders) to the precise physical cloud storage path of its active metadata file (the current metadata pointer).
+
+**Core Responsibilities and Requirements**  
+
+* **The Source of Truth**: It holds the exact location of the current table metadata file (.json), serving as the first step for anyone looking to interact with the table.
+* **Atomic Operations**: This is the primary requirement for any catalog backend. When data changes, the catalog swaps the old metadata pointer for the new one in a single, atomic step.
+* **Consistency & Concurrency**: Atomic updates act as a "lock manager." This ensures all readers and writers see the exact same table state at any given point in time and resolves conflicts when multiple engines try to write simultaneously.
+
+**How Different Backends Store the Pointer**  
+
+Because the only hard requirements are pointer storage and atomic guarantees, many different backends can serve as the catalog layer. However, they track that critical pointer differently under the hood:
+
+* REST Catalog (Modern Standard): Uses a standardized API to decouple the query engine from the catalog backend, offering the highest security and compatibility across different engines.
+* Hive Metastore: The table entry inside the metastore database uses a specific table property called location to store the path of the current metadata file.
+* Project Nessie: The table entry uses a specialized property called metadataLocation to track the file, enabling Git-like branching and merging for data tables.
+* Hadoop Catalog (Distributed Filesystems/S3): Uses the physical filesystem itself rather than a database. It tracks the active version via a physical text file named version-hint.text inside the table's metadata folder, which contains the current version number.
