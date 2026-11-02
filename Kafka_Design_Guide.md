@@ -1,7 +1,3 @@
-# Apache Kafka Production Cluster Sizing & Capacity Planning Guide
-
-**Architecture, broker sizing, topic design, partitions, storage, producer/consumer processes, high availability, and future growth**
-
 ## Table of contents
 
 1. [Objective and sizing philosophy](#1-objective-and-sizing-philosophy)
@@ -19,8 +15,6 @@
 13. [Final production sizing checklist](#13-final-production-sizing-checklist)
 14. [Recommended implementation order](#14-recommended-order-of-implementation)
 15. [Technical references](#15-technical-references)
-
----
 
 ## 1. Objective and sizing philosophy
 
