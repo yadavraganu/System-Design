@@ -294,9 +294,9 @@ A senior answer should mention both the atomic commit and the operation-specific
 
 ---
 
-# 7. Snapshots, time travel, and rollback
+## 6. Snapshots, Time travel, and Rollback
 
-## 7.1 Snapshot versus metadata version
+### 6.1 Snapshot versus metadata version
 
 A metadata JSON file version and a table snapshot are related but different concepts:
 
@@ -307,7 +307,7 @@ A metadata JSON file version and a table snapshot are related but different conc
 
 Do not use “snapshot” and “metadata JSON version” as synonyms.
 
-## 7.2 Time travel
+### 6.2 Time travel
 
 Time travel means reading a table as it existed at a retained snapshot or timestamp. It is useful for:
 
@@ -331,7 +331,7 @@ FROM prod.analytics.events TIMESTAMP AS OF '2026-10-31 23:59:59';
 
 Time travel is only possible while the relevant snapshot and referenced files have not been expired or otherwise removed.
 
-## 7.3 Rollback
+### 6.3 Rollback
 
 Rollback changes the table's current snapshot reference to a prior valid snapshot. It does not require copying every row back into newly written files. The prior snapshot already describes the data-file set that should become current.
 
@@ -346,7 +346,7 @@ CALL prod_catalog.system.rollback_to_snapshot(
 
 A rollback is a table-state operation, not a substitute for investigating the cause of a bad write. Confirm the selected snapshot, branch/reference state, and downstream dependencies before performing it.
 
-## 7.4 Snapshot retention
+### 6.4 Snapshot retention
 
 Snapshots accumulate as the table changes. Retention policy determines how far back time travel and rollback remain possible and when data files that are no longer needed can be physically removed.
 
