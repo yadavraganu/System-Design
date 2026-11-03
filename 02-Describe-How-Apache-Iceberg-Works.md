@@ -68,6 +68,10 @@ Iceberg answers these questions through metadata, snapshots, immutable data file
 
 ## 3. Iceberg table architecture
 
+<p align="center">
+  <img width="500" height="550" alt="image" src="https://github.com/user-attachments/assets/10423665-08fd-4d17-b133-626cf080b492" />
+</p>
+
 ### 3.1 The metadata tree
 
 For the established v1–v3 layout, the conceptual structure is:
@@ -416,11 +420,11 @@ Format v3 adds support for column default values. Distinguish a default value re
 
 ---
 
-# 9. Hidden partitioning and partition evolution
+## 8. Hidden Partitioning & Partition Evolution
 
 Partitioning groups rows so that queries can avoid scanning files that cannot contain matching records. Iceberg calls its approach hidden partitioning because users filter on source columns; they do not need to add or maintain derived partition columns in their queries.
 
-## 9.1 Partition transforms
+### 8.1 Partition transforms
 
 Common transforms include:
 
@@ -437,7 +441,7 @@ Common transforms include:
 
 The exact SQL spelling can vary by integration. Spark DDL accepts transform expressions such as `days(ts)` and `bucket(16, id)`; check the target engine's Iceberg documentation.
 
-## 9.2 Example of hidden partitioning
+### 8.2 Example of hidden partitioning
 
 Spark SQL example:
 
@@ -467,7 +471,7 @@ GROUP BY event_type;
 
 Iceberg translates source-column predicates into constraints on partition transforms where possible. The query does not need to expose or calculate the hidden partition columns itself.
 
-## 9.3 How to choose transforms
+### 8.3 How to choose transforms
 
 Choose transforms based on actual query predicates and data distribution:
 
@@ -479,7 +483,7 @@ Choose transforms based on actual query predicates and data distribution:
 
 Do not choose a partition scheme only because a source table has a column with a familiar name. Measure query patterns, data skew, file counts, and write behavior.
 
-## 9.4 Partition evolution
+### 8.4 Partition evolution
 
 Iceberg allows a table's partition spec to change over time. A new partition spec gets a new spec ID. New files use the new spec; existing files keep the spec under which they were written. Readers understand files from multiple specs through metadata.
 
@@ -496,11 +500,11 @@ Reader -> interprets each file using its recorded spec
 
 This is a major design benefit: changing partitioning does not automatically require rewriting all historical data.
 
-## 9.5 Partition evolution is not retroactive repartitioning
+### 8.5 Partition evolution is not retroactive repartitioning
 
 Changing the default partition spec affects how new files are written. It does not physically reorganize old files. If old data must be physically organized under the new layout for performance, a rewrite/compaction job is a separate maintenance decision.
 
-## 9.6 Partitioning mistakes to avoid
+### 8.6 Partitioning mistakes to avoid
 
 - Too many partitions or too many tiny files.
 - Using a transform that does not match common query predicates.
