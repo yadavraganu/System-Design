@@ -66,9 +66,9 @@ Iceberg answers these questions through metadata, snapshots, immutable data file
 
 ---
 
-# 3. Iceberg table architecture
+## 3. Iceberg table architecture
 
-## 4.1 The metadata tree
+### 3.1 The metadata tree
 
 For the established v1–v3 layout, the conceptual structure is:
 
@@ -105,7 +105,7 @@ Manifest list (v2/v3; v1 has legacy manifest-reference behavior)
 
 The diagram is logical. Exact metadata fields and file representations depend on the table-format version. In particular, the current specification describes a different root-manifest structure for the still-developing v4 format; do not silently apply that structure to v1–v3 tables.
 
-## 4.2 Table metadata JSON
+### 3.2 Table metadata JSON
 
 The table metadata file is the table's metadata entry point. It includes information such as:
 
@@ -121,7 +121,7 @@ The table metadata file is the table's metadata entry point. It includes informa
 
 A metadata-file update does not necessarily mean the table's row data changed. For example, a schema change or property change can update table metadata without rewriting data files. A data-changing commit normally adds a new snapshot.
 
-## 4.3 Snapshots
+### 3.3 Snapshots
 
 A snapshot represents the complete visible table state at a particular point in time. It has a unique snapshot ID and, for v2/v3, a sequence number. It can also contain a parent snapshot ID, a timestamp, a summary, and the manifest-list location.
 
@@ -137,13 +137,13 @@ Snapshot S3: data files A, C       (remove B, perhaps through overwrite/compacti
 
 S2 still describes A, B, and C even after S3 becomes current. B can remain necessary for a query time-travelling to S2. It is only eligible for physical deletion once no retained snapshot or reference requires it.
 
-## 4.4 Manifest list
+### 3.4 Manifest list
 
 In v2/v3, the manifest list is associated with a snapshot and identifies the manifests that make up that snapshot. It stores information about manifests, including partition summaries and file counts. This lets the reader skip manifests that cannot contain relevant files.
 
 Think of the manifest list as an index over manifest files, not as a row-level data file.
 
-## 4.5 Manifest files
+### 3.5 Manifest files
 
 A manifest is an immutable metadata file containing entries for a subset of a table's data files or delete files. Entries typically record:
 
@@ -159,13 +159,13 @@ A manifest can track files from many partitions; a manifest is not itself a phys
 
 Manifest reuse is important. If a commit appends new files, Iceberg can often add a new manifest while reusing manifests that still describe unchanged files.
 
-## 4.6 Data files
+### 3.6 Data files
 
 Data files contain the actual rows. Iceberg commonly uses Parquet, Avro, or ORC as its data-file formats. The Iceberg table metadata is responsible for interpreting those files as one logical table, including field IDs and partition information.
 
 Do not assume that the folder names or path layout define the table's logical schema or partition semantics. Iceberg tracks files explicitly in metadata.
 
-## 4.7 Metadata-file layout versus data-file layout
+### 3.7 Metadata-file layout versus data-file layout
 
 A useful interview distinction:
 
